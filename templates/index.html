@@ -36,5 +36,76 @@
             {{ calendar_html | safe }}
         </div>
     </div>
+	<hr>
+	
+	<div class="nav-container">
+    <h3 class="nav-title">🎮 遊戲選單</h3>
+    <div class="nav-buttons">
+        <a href="/" class="nav-btn btn-home">📅 觀看日曆</a>
+        <a href="/2048" class="nav-btn btn-2048">🧩 挑戰 2048</a>
+        <a href="/game" class="nav-btn btn-guess">🔢 數字猜謎</a>
+    </div>
+</div>
+
+<style>
+    .nav-container {
+        margin-top: 40px;
+        padding: 20px;
+        background-color: #f0ede5; /* 淺米色背景，更有質感 */
+        border-top: 2px solid #bbada0;
+        text-align: center;
+    }
+
+    .nav-title {
+        color: #776e65;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
+    }
+
+    .nav-buttons {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap; /* 手機空間不足時自動換行 */
+        gap: 12px;
+    }
+
+    .nav-btn {
+        padding: 12px 20px;
+        text-decoration: none;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease; /* 增加平滑動畫 */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 微弱陰影 */
+        display: inline-block;
+    }
+
+    /* 各別按鈕的顏色設計 */
+    .btn-home { background-color: #8f7a66; }
+    .btn-2048 { background-color: #f2b179; }
+    .btn-guess { background-color: #bbada0; }
+
+    /* 懸停效果 (滑鼠移上去或點擊時) */
+    .nav-btn:hover {
+        transform: translateY(-3px); /* 向上微跳 */
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        filter: brightness(1.1); /* 稍微變亮 */
+    }
+
+    .nav-btn:active {
+        transform: translateY(1px); /* 按下去的沉入感 */
+    }
+
+    /* 手機版微調 */
+    @media (max-width: 480px) {
+        .nav-btn {
+            width: 80%; /* 手機上按鈕寬一點比較好按 */
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 </body>
 </html>
