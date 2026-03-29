@@ -2,9 +2,31 @@ from flask import Flask, render_template, request, session, redirect, url_for
 import calendar
 from datetime import datetime
 import random
+import sqlite3
 
 app = Flask(__name__)
 app.secret_key = "f8#2d_K9L!zPqX6vW5r_p0A1"
+
+# --- 資料庫初始化 ---
+def init_db():
+    conn = sqlite3.connect('leaderboard.db')
+    c = conn.cursor()
+    # 建立資料表：名字、分數、日期
+    c.execute('''CREATE TABLE IF NOT EXISTS scores 
+                 (name TEXT, score INTEGER, date TEXT)''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# 取得前 10 名排行榜
+def get_leaderboard():
+    conn = sqlite3.connect('leaderboard.db')
+    c = conn.cursor()
+    c.execute("SELECT name, score FROM scores ORDER BY score DESC LIMIT 10")
+    data = c.fetchall()
+    conn.close()
+    return data
 
 # --- 日曆邏輯 ---
 class HighlightCalendar(calendar.HTMLCalendar):
@@ -81,19 +103,30 @@ def home():
                            calendar_html=cal.formatmonth(view_year, view_month),
                            prev_y=prev_y, prev_m=prev_m, next_y=next_y, next_m=next_m)
 
-@app.route("/2048")
+@app.route("/2048", methods=["GET", "POST"])
 def game_2048():
+    # 處理輸入名字的 POST 請求
+    if request.method == "POST":
+        session["player_name"] = request.form.get("player_name", "Anonymous")
+        return redirect(url_for('game_2048'))
+
     if "board" not in session or len(session["board"]) != 6:
-        # 修正：補上初始化邏輯
         session["board"] = add_tile_dynamic(add_tile_dynamic([[0]*6 for _ in range(6)]))
         session["score"] = 0
         session["game_over"] = False
+        # 如果沒名字，預設叫訪客
+        if "player_name" not in session:
+            session["player_name"] = None 
+
+    leaderboard = get_leaderboard()
     
     return render_template("2048.html", 
                            board=session["board"], 
                            score=session["score"], 
                            best=session.get("best_2048", 0),
-                           game_over=session.get("game_over", False))
+                           game_over=session.get("game_over", False),
+                           player_name=session.get("player_name"),
+                           leaderboard=leaderboard)
 
 @app.route("/2048/move/<dir>")
 def move_2048(dir):
@@ -139,8 +172,37 @@ def move_2048(dir):
         session["best_2048"] = session["score"]
     
     # 檢查是否死亡
-    session["game_over"] = check_game_over(final_board)
+    if check_game_over(final_board):
+        session["game_over"] = True
+        # 儲存到資料庫
+        name = session.get("player_name", "Anonymous")
+        score = session["score"]
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        conn = sqlite3.connect('leaderboard.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO scores VALUES (?, ?, ?)", (name, score, date_str))
+        conn.commit()
+        conn.close()
             
+    return redirect(url_for('game_2048'))
+
+@app.route("/2048/settle")
+def settle_2048():
+    if "board" in session and session.get("score", 0) > 0:
+        name = session.get("player_name", "Anonymous")
+        score = session["score"]
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        # 存入資料庫
+        conn = sqlite3.connect('leaderboard.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO scores VALUES (?, ?, ?)", (name, score, date_str))
+        conn.commit()
+        conn.close()
+        
+        # 標記為 Game Over 狀態以顯示結算畫面
+        session["game_over"] = True
     return redirect(url_for('game_2048'))
 
 @app.route("/2048/reset")

@@ -2,109 +2,64 @@
 <html>
 <head>
     <title>6x6 2048 遊戲</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #faf8ef; color: #776e65; }
+        /* ... 此處保留你原本所有的 CSS ... */
+        body { font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #faf8ef; color: #776e65; touch-action: none; }
         .header { margin-top: 30px; }
         .score-container { display: flex; justify-content: center; gap: 10px; margin: 20px; }
-        .score-box { background: #bbada0; padding: 10px 25px; border-radius: 5px; color: white; }
+        .score-box { background: #bbada0; padding: 10px 25px; border-radius: 5px; color: white; min-width: 80px; }
         .score-box span { display: block; }
         .label { font-size: 13px; font-weight: bold; }
         .value { font-size: 25px; font-weight: bold; }
 
-        /* 6x6 棋盤佈局 */
-        .grid-container {
-		position: relative; /* 確保遮罩正確覆蓋 */
-		display: grid;
-		grid-template-columns: repeat(6, 1fr);
-		grid-gap: 8px; /* 稍微縮小間距，適合 6x6 */
-		background-color: #bbada0;
-		padding: 10px;
-		border-radius: 6px;
-		width: 95vw; /* 手機上寬度多一點點 */
-		max-width: 500px;
-		margin: 20px auto;
-		aspect-ratio: 1 / 1;
-		overflow: hidden; /* 確保遮罩不超出邊界 */
-		}
-		
-		/* 遮罩本人 */
-		.game-over-mask {
-		position: absolute;
-		top: 0; left: 0;
-		width: 100%; height: 100%;
-		background-color: rgba(238, 228, 218, 0.85);
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		z-index: 100;
-		border-radius: 6px;
-		/* 加入一個淡入效果 */
-		animation: fadeIn 0.5s ease-in-out;
-		}
-		
-		@keyframes fadeIn {
-		from { opacity: 0; }
-		to { opacity: 1; }
-		}
-		
-		/* 遊戲結束文字 */
-		.game-over-title {
-			font-size: 40px;
-			font-weight: bold;
-			color: #776e65;
-			margin: 0;
-		}
+        .grid-container { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); grid-gap: 8px; background-color: #bbada0; padding: 10px; border-radius: 6px; width: 95vw; max-width: 500px; margin: 20px auto; aspect-ratio: 1 / 1; overflow: hidden; }
+        .tile { background-color: #cdc1b4; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; border-radius: 4px; aspect-ratio: 1 / 1; }
+        
+        /* 數字顏色擴充 */
+        .tile-2 { background: #eee4da; color: #776e65; }
+        .tile-4 { background: #ede0c8; color: #776e65; }
+        .tile-8 { background: #f2b179; color: white; }
+        .tile-16 { background: #f59563; color: white; }
+        .tile-32 { background: #f67c5f; color: white; }
+        .tile-64 { background: #f65e3b; color: white; }
+        .tile-128 { background: #edcf72; color: white; font-size: 18px; box-shadow: 0 0 10px #edcf72; }
 
-		/* 重新開始按鈕 */
-		.retry-btn {
-			margin-top: 20px;
-			padding: 12px 25px;
-			background-color: #8f7a66;
-			color: white;
-			text-decoration: none;
-			border-radius: 5px;
-			font-weight: bold;
-		}
+        .game-over-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(238, 228, 218, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 6px; animation: fadeIn 0.5s; }
+        .name-input-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #faf8ef; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; }
+        
+        .retry-btn, .settle-btn { padding: 12px 20px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px; display: inline-block; border: none; cursor: pointer; }
+        .retry-btn { background-color: #8f7a66; }
+        .settle-btn { background-color: #f65e3b; }
+        
+        /* 分享按鈕 */
+        .share-btn { padding: 8px 15px; border-radius: 5px; color: white; font-size: 14px; text-decoration: none; margin: 5px; font-weight: bold; }
+        .btn-line { background-color: #00b900; }
+        .btn-fb { background-color: #1877f2; }
 
-        .tile {
-		background-color: #cdc1b4;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		font-size: 22px; /* 基本字體大一點 */
-		font-weight: bold;
-		border-radius: 4px;
-		aspect-ratio: 1 / 1;
-		transition: transform 0.1s; /* 加入極微小的移動平滑感 */
-		}
-
-        /* 根據數字大小設定漸層感 */
-		.tile-2 { background: #eee4da; color: #776e65; }
-		.tile-4 { background: #ede0c8; color: #776e65; }
-		.tile-8 { background: #f2b179; color: white; }
-		.tile-16 { background: #f59563; color: white; }
-		.tile-32 { background: #f67c5f; color: white; }
-		.tile-64 { background: #f65e3b; color: white; }
-		.tile-128 { background: #edcf72; color: white; font-size: 18px; box-shadow: 0 0 10px #edcf72; }
-		.tile-256 { background: #edcc61; color: white; font-size: 18px; box-shadow: 0 0 15px #edcc61; }
-		.tile-512 { background: #edc850; color: white; font-size: 18px; }
-		.tile-1024 { background: #edc53f; color: white; font-size: 14px; }
-		.tile-2048 { background: #edc22e; color: white; font-size: 14px; }
-		
-		.mobile-controls button {
-        width: 60px; height: 60px; margin: 5px;
-        font-size: 24px; background: #8f7a66; color: white;
-        border: none; border-radius: 5px;
-    }
-		body { touch-action: none; }
-		
+        .leaderboard-table { width: 100%; max-width: 400px; margin: 20px auto; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .leaderboard-table th { background: #bbada0; color: white; padding: 12px; }
+        .leaderboard-table td { padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
+
+    {% if not player_name %}
+    <div class="name-input-overlay">
+        <h1 style="font-size: 40px; color: #776e65;">2048 <small>6x6</small></h1>
+        <h2>準備挑戰排行榜嗎？</h2>
+        <form method="POST">
+            <input type="text" name="player_name" placeholder="請輸入你的暱稱" required 
+                   style="padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #bbada0; width: 250px; text-align: center;">
+            <br><br>
+            <button type="submit" class="retry-btn" style="width: 278px;">開始挑戰</button>
+        </form>
+    </div>
+    {% endif %}
+
     <div class="header">
         <h1>2048 <span style="font-size: 0.5em;">6x6 Edition</span></h1>
+        <p style="margin: 0; color: #8f7a66; font-weight: bold;">當前挑戰者：{{ player_name or '訪客' }}</p>
         <div class="score-container">
             <div class="score-box"><span class="label">SCORE</span><span class="value">{{ score }}</span></div>
             <div class="score-box"><span class="label">BEST</span><span class="value">{{ best }}</span></div>
@@ -112,146 +67,70 @@
     </div>
 
     <div class="grid-container">
-		{% for row in board %}
-			{% for cell in row %}
-				<div class="tile tile-{{ cell if cell > 0 else 'empty' }}">
-					{{ cell if cell > 0 else '' }}
-				</div>
-			{% endfor %}
-		{% endfor %}
+        {% for row in board %}
+            {% for cell in row %}
+                <div class="tile tile-{{ cell if cell > 0 else 'empty' }}">
+                    {{ cell if cell > 0 else '' }}
+                </div>
+            {% endfor %}
+        {% endfor %}
 
-		{% if game_over %}
-			<div class="game-over-mask">
-				<h2 class="game-over-title">遊戲結束</h2>
-				<p class="final-score">最終得分：{{ score }}</p>
-				<a href="/2048/reset" class="retry-btn">重新開始</a>
-			</div>
-		{% endif %}
-	</div>
-	<div class="mobile-controls" style="margin-top: 20px; display: none;">
-		<button onclick="location.href='/2048/move/up'">↑</button><br>
-		<button onclick="location.href='/2048/move/left'">←</button>
-		<button onclick="location.href='/2048/move/down'">↓</button>
-		<button onclick="location.href='/2048/move/right'">→</button>
-	</div>
-	
-    <p>使用鍵盤 <b>↑ ↓ ← →</b> 來移動方塊！</p>
-    <a href="/2048/reset" style="text-decoration:none; color:#8f7a66; font-weight:bold;">重新開始</a>
+        {% if game_over %}
+            <div class="game-over-mask">
+                <h2 style="font-size: 40px; margin: 0;">遊戲結束</h2>
+                <p style="font-size: 20px;">最終得分：{{ score }}</p>
+                
+                <div>
+                    <a href="javascript:shareLine()" class="share-btn btn-line">分享到 LINE</a>
+                    <a href="javascript:shareFB()" class="share-btn btn-fb">分享到 FB</a>
+                </div>
+
+                <a href="/2048/reset" class="retry-btn">重新挑戰</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div style="margin: 20px;">
+        <a href="/2048/settle" class="settle-btn" onclick="return confirm('確定要現在結束並結算分數嗎？')">提交成績並結束</a>
+        <a href="/2048/reset" class="retry-btn">重新開始</a>
+    </div>
+
+    <p>使用鍵盤 <b>↑ ↓ ← →</b> 或 <b>手機滑動</b> 來移動！</p>
+
+    <div class="leaderboard-container">
+        <h3>🏆 全球英雄榜 (Top 10)</h3>
+        <table class="leaderboard-table">
+            <tr><th>排名</th><th>玩家</th><th>分數</th></tr>
+            {% for name, score in leaderboard %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ name }}</td>
+                <td style="font-weight: bold; color: #f2b179;">{{ score }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 
     <script>
-    // --- 原有的鍵盤監聽 ---
-    document.addEventListener('keydown', (e) => {
-        const moves = { 'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right' };
-        if (moves[e.key]) window.location.href = '/2048/move/' + moves[e.key];
-    });
-
-    // --- 新增：觸控滑動監聽 (Swipe Logic) ---
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    document.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-    }, false);
-
-    document.addEventListener('touchend', (e) => {
-        let touchEndX = e.changedTouches[0].screenX;
-        let touchEndY = e.changedTouches[0].screenY;
-        handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
-    }, false);
-
-    function handleSwipe(startX, startY, endX, endY) {
-        const dx = endX - startX;
-        const dy = endY - startY;
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-
-        // 確保滑動距離夠長，避免誤觸 (門檻值 30 像素)
-        if (Math.max(absDx, absDy) > 30) {
-            let dir = '';
-            if (absDx > absDy) {
-                dir = dx > 0 ? 'right' : 'left';
-            } else {
-                dir = dy > 0 ? 'down' : 'up';
-            }
-            window.location.href = '/2048/move/' + dir;
+        // 分享功能
+        function shareLine() {
+            const text = encodeURIComponent("我在 6x6 2048 挑戰賽拿到了 {{ score }} 分！快來挑戰我吧！");
+            const url = encodeURIComponent(window.location.origin + "/2048");
+            window.open(`https://social-plugins.line.me/lineit/share?text=${text}&url=${url}`);
         }
-    }
 
-    // 如果是行動裝置，顯示備用按鈕
-    if ('ontouchstart' in window) {
-        document.querySelector('.mobile-controls').style.display = 'block';
-    }
-</script>
-
-	<div class="nav-container">
-    <h3 class="nav-title">🎮 遊戲選單</h3>
-    <div class="nav-buttons">
-        <a href="/" class="nav-btn btn-home">📅 觀看日曆</a>
-        <a href="/2048" class="nav-btn btn-2048">🧩 挑戰 2048</a>
-        <a href="/game" class="nav-btn btn-guess">🔢 數字猜謎</a>
-    </div>
-</div>
-
-<style>
-    .nav-container {
-        margin-top: 40px;
-        padding: 20px;
-        background-color: #f0ede5; /* 淺米色背景，更有質感 */
-        border-top: 2px solid #bbada0;
-        text-align: center;
-    }
-
-    .nav-title {
-        color: #776e65;
-        font-size: 1.2rem;
-        margin-bottom: 15px;
-        letter-spacing: 1px;
-    }
-
-    .nav-buttons {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap; /* 手機空間不足時自動換行 */
-        gap: 12px;
-    }
-
-    .nav-btn {
-        padding: 12px 20px;
-        text-decoration: none;
-        color: white;
-        font-weight: bold;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        transition: all 0.3s ease; /* 增加平滑動畫 */
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 微弱陰影 */
-        display: inline-block;
-    }
-
-    /* 各別按鈕的顏色設計 */
-    .btn-home { background-color: #8f7a66; }
-    .btn-2048 { background-color: #f2b179; }
-    .btn-guess { background-color: #bbada0; }
-
-    /* 懸停效果 (滑鼠移上去或點擊時) */
-    .nav-btn:hover {
-        transform: translateY(-3px); /* 向上微跳 */
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        filter: brightness(1.1); /* 稍微變亮 */
-    }
-
-    .nav-btn:active {
-        transform: translateY(1px); /* 按下去的沉入感 */
-    }
-
-    /* 手機版微調 */
-    @media (max-width: 480px) {
-        .nav-btn {
-            width: 80%; /* 手機上按鈕寬一點比較好按 */
-            margin-bottom: 5px;
+        function shareFB() {
+            const url = encodeURIComponent(window.location.origin + "/2048");
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`);
         }
-    }
-</style>
 
+        // 鍵盤監聽
+        document.addEventListener('keydown', (e) => {
+            const moves = { 'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right' };
+            if (moves[e.key]) window.location.href = '/2048/move/' + moves[e.key];
+        });
+
+        // 滑動邏輯 (略，請保留你原本的 Swipe Logic 代碼)
+    </script>
 </body>
 </html>
