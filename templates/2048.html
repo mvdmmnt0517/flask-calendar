@@ -1,120 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <title>6x6 2048 遊戲</title>
+    <meta charset="UTF-8">
+    <title>2048 6x6 競技版</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* ... 此處保留你原本所有的 CSS ... */
-        body { font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #faf8ef; color: #776e65; touch-action: none; }
-        .header { margin-top: 30px; }
-        .score-container { display: flex; justify-content: center; gap: 10px; margin: 20px; }
-        .score-box { background: #bbada0; padding: 10px 25px; border-radius: 5px; color: white; min-width: 80px; }
+        body { 
+            font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif; 
+            text-align: center; 
+            background-color: #faf8ef; 
+            color: #776e65; 
+            margin: 0;
+            padding-bottom: 50px;
+            touch-action: none; 
+        }
+
+        /* 標題與分數區 */
+        .header { margin-top: 20px; }
+        .score-container { display: flex; justify-content: center; gap: 10px; margin: 15px; }
+        .score-box { background: #bbada0; padding: 10px 20px; border-radius: 5px; color: white; min-width: 80px; }
         .score-box span { display: block; }
         .label { font-size: 13px; font-weight: bold; }
-        .value { font-size: 25px; font-weight: bold; }
+        .value { font-size: 22px; font-weight: bold; }
 
-        .grid-container { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); grid-gap: 8px; background-color: #bbada0; padding: 10px; border-radius: 6px; width: 95vw; max-width: 500px; margin: 20px auto; aspect-ratio: 1 / 1; overflow: hidden; }
-        .tile { background-color: #cdc1b4; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; border-radius: 4px; aspect-ratio: 1 / 1; }
-        
-        /* 數字顏色擴充 */
+        /* --- 核心佈局：左右並排 --- */
+        .game-layout {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* 左側：遊戲區 */
+        .game-side { flex: 0 0 auto; }
+
+        /* 右側：排行榜區 */
+        .leaderboard-side {
+            flex: 0 1 350px;
+            background: rgba(187, 173, 160, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 300px;
+        }
+
+        /* 6x6 棋盤 */
+        .grid-container {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-gap: 8px;
+            background-color: #bbada0;
+            padding: 10px;
+            border-radius: 6px;
+            width: 90vw;
+            max-width: 460px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+
+        .tile {
+            background-color: #cdc1b4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 4px;
+            aspect-ratio: 1 / 1;
+        }
+
+        /* 數字顏色 */
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
         .tile-8 { background: #f2b179; color: white; }
         .tile-16 { background: #f59563; color: white; }
         .tile-32 { background: #f67c5f; color: white; }
         .tile-64 { background: #f65e3b; color: white; }
-        .tile-128 { background: #edcf72; color: white; font-size: 18px; box-shadow: 0 0 10px #edcf72; }
+        .tile-128 { background: #edcf72; color: white; font-size: 16px; box-shadow: 0 0 10px #edcf72; }
+        .tile-256 { background: #edcc61; color: white; font-size: 16px; }
+        .tile-512 { background: #edc850; color: white; }
+        .tile-1024 { background: #edc53f; color: white; font-size: 14px; }
+        .tile-2048 { background: #edc22e; color: white; font-size: 14px; }
 
-        .game-over-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(238, 228, 218, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 6px; animation: fadeIn 0.5s; }
-        .name-input-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #faf8ef; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; }
-        
-        .retry-btn, .settle-btn { padding: 12px 20px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px; display: inline-block; border: none; cursor: pointer; }
+        /* 遮罩層 */
+        .game-over-mask, .name-input-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(238, 228, 218, 0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; border-radius: 6px;
+        }
+        .name-input-overlay { position: fixed; background-color: #faf8ef; z-index: 999; }
+
+        /* 按鈕樣式 */
+        .btn {
+            padding: 12px 20px; color: white; text-decoration: none; border-radius: 5px;
+            font-weight: bold; margin: 5px; display: inline-block; border: none; cursor: pointer;
+        }
         .retry-btn { background-color: #8f7a66; }
         .settle-btn { background-color: #f65e3b; }
-        
-        /* 分享按鈕 */
-        .share-btn { padding: 8px 15px; border-radius: 5px; color: white; font-size: 14px; text-decoration: none; margin: 5px; font-weight: bold; }
+        .share-btn { padding: 8px 12px; font-size: 13px; }
         .btn-line { background-color: #00b900; }
         .btn-fb { background-color: #1877f2; }
 
-        .leaderboard-table { width: 100%; max-width: 400px; margin: 20px auto; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .leaderboard-table th { background: #bbada0; color: white; padding: 12px; }
-        .leaderboard-table td { padding: 10px; border-bottom: 1px solid #eee; }
+        /* 排行榜表格 */
+        .leaderboard-table {
+            width: 100%; border-collapse: collapse; background: white;
+            border-radius: 8px; overflow: hidden; font-size: 15px;
+        }
+        .leaderboard-table th { background: #bbada0; color: white; padding: 10px; }
+        .leaderboard-table td { padding: 8px; border-bottom: 1px solid #eee; }
+
+        /* 響應式調整 */
+        @media (max-width: 900px) {
+            .game-layout { flex-direction: column; align-items: center; }
+            .leaderboard-side { width: 90vw; max-width: 460px; margin-top: 20px; }
+        }
     </style>
 </head>
 <body>
 
     {% if not player_name %}
     <div class="name-input-overlay">
-        <h1 style="font-size: 40px; color: #776e65;">2048 <small>6x6</small></h1>
-        <h2>準備挑戰排行榜嗎？</h2>
+        <h1 style="color: #776e65;">2048 <small>6x6 Edition</small></h1>
+        <p>輸入你的暱稱，挑戰全球排行榜！</p>
         <form method="POST">
-            <input type="text" name="player_name" placeholder="請輸入你的暱稱" required 
-                   style="padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #bbada0; width: 250px; text-align: center;">
+            <input type="text" name="player_name" placeholder="請輸入暱稱" required 
+                   style="padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #bbada0; width: 220px; text-align: center;">
             <br><br>
-            <button type="submit" class="retry-btn" style="width: 278px;">開始挑戰</button>
+            <button type="submit" class="btn retry-btn" style="width: 248px;">進入遊戲</button>
         </form>
     </div>
     {% endif %}
 
     <div class="header">
         <h1>2048 <span style="font-size: 0.5em;">6x6 Edition</span></h1>
-        <p style="margin: 0; color: #8f7a66; font-weight: bold;">當前挑戰者：{{ player_name or '訪客' }}</p>
+        <p style="margin: 0; color: #8f7a66; font-weight: bold;">挑戰者：{{ player_name or '訪客' }}</p>
         <div class="score-container">
             <div class="score-box"><span class="label">SCORE</span><span class="value">{{ score }}</span></div>
             <div class="score-box"><span class="label">BEST</span><span class="value">{{ best }}</span></div>
         </div>
     </div>
 
-    <div class="grid-container">
-        {% for row in board %}
-            {% for cell in row %}
-                <div class="tile tile-{{ cell if cell > 0 else 'empty' }}">
-                    {{ cell if cell > 0 else '' }}
-                </div>
-            {% endfor %}
-        {% endfor %}
+    <div class="game-layout">
+        
+        <div class="game-side">
+            <div class="grid-container">
+                {% for row in board %}
+                    {% for cell in row %}
+                        <div class="tile tile-{{ cell if cell > 0 else 'empty' }}">
+                            {{ cell if cell > 0 else '' }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
 
-        {% if game_over %}
-            <div class="game-over-mask">
-                <h2 style="font-size: 40px; margin: 0;">遊戲結束</h2>
-                <p style="font-size: 20px;">最終得分：{{ score }}</p>
-                
-                <div>
-                    <a href="javascript:shareLine()" class="share-btn btn-line">分享到 LINE</a>
-                    <a href="javascript:shareFB()" class="share-btn btn-fb">分享到 FB</a>
-                </div>
-
-                <a href="/2048/reset" class="retry-btn">重新挑戰</a>
+                {% if game_over %}
+                    <div class="game-over-mask">
+                        <h2 style="margin: 0;">遊戲結束</h2>
+                        <p>最終得分：{{ score }}</p>
+                        <div style="margin-bottom: 15px;">
+                            <a href="javascript:shareLine()" class="btn share-btn btn-line">LINE 分享</a>
+                            <a href="javascript:shareFB()" class="btn share-btn btn-fb">FB 分享</a>
+                        </div>
+                        <a href="/2048/reset" class="btn retry-btn">重新挑戰</a>
+                    </div>
+                {% endif %}
             </div>
-        {% endif %}
+
+            <div style="margin-top: 15px;">
+                <a href="/2048/settle" class="btn settle-btn" onclick="return confirm('確定要結算目前分數並結束嗎？')">提交成績</a>
+                <a href="/2048/reset" class="btn retry-btn">重新開始</a>
+            </div>
+            <p style="font-size: 14px; color: #999;">使用鍵盤方向鍵或手機滑動來移動</p>
+        </div>
+
+        <div class="leaderboard-side">
+            <h3 style="margin-top: 0;">🏆 英雄榜 (Top 10)</h3>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr><th>#</th><th>玩家</th><th>分數</th></tr>
+                </thead>
+                <tbody>
+                    {% for name, score in leaderboard %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ name }}</td>
+                        <td style="font-weight: bold; color: #f2b179;">{{ score }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3">尚無紀錄</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div style="margin: 20px;">
-        <a href="/2048/settle" class="settle-btn" onclick="return confirm('確定要現在結束並結算分數嗎？')">提交成績並結束</a>
-        <a href="/2048/reset" class="retry-btn">重新開始</a>
-    </div>
-
-    <p>使用鍵盤 <b>↑ ↓ ← →</b> 或 <b>手機滑動</b> 來移動！</p>
-
-    <div class="leaderboard-container">
-        <h3>🏆 全球英雄榜 (Top 10)</h3>
-        <table class="leaderboard-table">
-            <tr><th>排名</th><th>玩家</th><th>分數</th></tr>
-            {% for name, score in leaderboard %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ name }}</td>
-                <td style="font-weight: bold; color: #f2b179;">{{ score }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+    <div style="margin-top: 30px;">
+        <a href="/" style="color: #8f7a66; font-weight: bold; text-decoration: none;">🏠 返回首頁</a>
     </div>
 
     <script>
-        // 分享功能
+        // 分享功能邏輯
         function shareLine() {
-            const text = encodeURIComponent("我在 6x6 2048 挑戰賽拿到了 {{ score }} 分！快來挑戰我吧！");
+            const text = encodeURIComponent("我在 6x6 2048 拿到了 {{ score }} 分！快來挑戰我！");
             const url = encodeURIComponent(window.location.origin + "/2048");
             window.open(`https://social-plugins.line.me/lineit/share?text=${text}&url=${url}`);
         }
@@ -130,7 +220,21 @@
             if (moves[e.key]) window.location.href = '/2048/move/' + moves[e.key];
         });
 
-        // 滑動邏輯 (略，請保留你原本的 Swipe Logic 代碼)
+        // 觸控滑動 (Swipe Logic)
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', e => {
+            let dx = e.changedTouches[0].screenX - touchStartX;
+            let dy = e.changedTouches[0].screenY - touchStartY;
+            if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) {
+                let dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+                window.location.href = '/2048/move/' + dir;
+            }
+        }, false);
     </script>
 </body>
 </html>
