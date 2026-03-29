@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request
 import calendar
 from datetime import datetime
+import random 
+from flask import session 
 
+app.secret_key = "any_secret_key" # session 必須設定一個密鑰才能運作
 app = Flask(__name__)
 
 # 自定義日曆類別，用來幫「今天」加上特殊的 HTML class
@@ -17,6 +20,35 @@ class HighlightCalendar(calendar.HTMLCalendar):
             return '<td class="noday">&nbsp;</td>'
         return f'<td class="day">{day}</td>'
 
+
+@app.route("/game", methods=["GET", "POST"])
+def game():
+    # 1. 如果是新遊戲，或者沒設定數字，就隨機選一個
+    if "target" not in session:
+        session["target"] = random.randint(1, 100)
+        session["attempts"] = 0
+        session["msg"] = "歡迎來到猜數字遊戲！請輸入 1-100 的數字。"
+
+    # 2. 當玩家按下「提交」按鈕時 (POST)
+    if request.method == "POST":
+        try:
+            guess = int(request.form.get("num"))
+            session["attempts"] += 1
+            
+            if guess < session["target"]:
+                session["msg"] = f"太小了！(已猜 {session['attempts']} 次)"
+            elif guess > session["target"]:
+                session["msg"] = f"太大了！(已猜 {session['attempts']} 次)"
+            else:
+                session["msg"] = f"恭喜猜中了！答案是 {session['target']}，總共猜了 {session['attempts']} 次。"
+                # 猜中後重置，下次進來就是新遊戲
+                session.pop("target") 
+        except:
+            session["msg"] = "請輸入有效的數字！"
+
+    return render_template("game.html", message=session["msg"])
+    
+    
 @app.route("/")
 def home():
     # 1. 取得真正的「今天」
